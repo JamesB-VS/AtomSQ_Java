@@ -1168,12 +1168,12 @@ public class AtomSQExtension extends ControllerExtension
    private CursorBrowserFilterItem mBrowserCategory;
    private CursorBrowserFilterItem mBrowserCreator;
    private CursorBrowserFilterItem mBrowserTag;
-   //V1.1 New
+      //V1.1 New
    private CursorBrowserFilterItem mBrowserFavorites;
    private CursorBrowserFilterItem mBrowserDevType;
    private CursorBrowserFilterItem mBrowserLocation;
    private CursorBrowserFilterItem mBrowserFileType;
-   
+
    private DisplayMode DM;
    public ControllerHost mHost;
    private static final HardwareHandler hH = new HardwareHandler();
@@ -1188,26 +1188,26 @@ public class AtomSQExtension extends ControllerExtension
    private boolean mShift;
    private HardwareSurface mHardwareSurface;
    private HardwareButton mShiftButton;
-    private HardwareButton mUpButton;
-    private HardwareButton mDownButton;
-    private HardwareButton mLeftButton;
-    private HardwareButton mRightButton;
-    private HardwareButton mForwardButton;
-    private HardwareButton mBackButton;
-    private HardwareButton mClickCountInButton;
-    private HardwareButton mRecordSaveButton;
-    private HardwareButton mPlayLoopButton;
-    private HardwareButton mStopUndoButton;
-    private HardwareButton mSongButton;
-    private HardwareButton mEditorButton;
-    private HardwareButton mInstButton;
-    private HardwareButton mUserButton;
-    private HardwareButton m1Button;
-    private HardwareButton m2Button;
-    private HardwareButton m3Button;
-    private HardwareButton m4Button;
-    private HardwareButton m5Button;
-    private HardwareButton m6Button;
+   private HardwareButton mUpButton;
+   private HardwareButton mDownButton;
+   private HardwareButton mLeftButton;
+   private HardwareButton mRightButton;
+   private HardwareButton mForwardButton;
+   private HardwareButton mBackButton;
+   private HardwareButton mClickCountInButton;
+   private HardwareButton mRecordSaveButton;
+   private HardwareButton mPlayLoopButton;
+   private HardwareButton mStopUndoButton;
+   private HardwareButton mSongButton;
+   private HardwareButton mEditorButton;
+   private HardwareButton mInstButton;
+   private HardwareButton mUserButton;
+   private HardwareButton m1Button;
+   private HardwareButton m2Button;
+   private HardwareButton m3Button;
+   private HardwareButton m4Button;
+   private HardwareButton m5Button;
+   private HardwareButton m6Button;
    private final RelativeHardwareKnob[] mEncoders = new RelativeHardwareKnob[9];
    private final Layers mLayers = new Layers(this)
    {

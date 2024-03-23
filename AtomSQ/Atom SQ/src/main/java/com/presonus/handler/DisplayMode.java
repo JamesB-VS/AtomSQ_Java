@@ -90,29 +90,22 @@ public class DisplayMode
          String pTrack = dCursorTrack.name().get();
          byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
             dMidiOut.sendSysex(sysex2);
-
          //Main line 2
          byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Add a Device :) ", 15).terminate();
          dMidiOut.sendSysex(sysex3);
-
       }
       //V1.1 adding DeviceBrowser option
-
-
       else 
             {
          //Main line 1 
          String pTrack = dCursorTrack.name().get();
          byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("Track: ", 7).addString(pTrack, pTrack.length()).terminate();
             dMidiOut.sendSysex(sysex2);
-         
          //Main line 2
          String pDev = dCursorDevice.name().get();
          byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
          dMidiOut.sendSysex(sysex3);
       }
-
-
    }
 
    public void initHW()
@@ -182,9 +175,6 @@ public class DisplayMode
       }
    dMidiOut.sendSysex("F0000106221301F7");
    }
- 
-
-
 
    public void Song2Mode ()
    {
@@ -263,8 +253,6 @@ public void InstEmptyMode ()
       dMidiOut.sendSysex("F0000106221301F7");
    }
 
-
-
     public void Inst2Mode ()
     {
        //dHost.println("InstMode");
@@ -340,5 +328,4 @@ public void InstEmptyMode ()
       dMidiOut.sendSysex("F0000106221301F7");
     }
 
- 
 }
