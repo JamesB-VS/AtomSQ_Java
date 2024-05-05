@@ -3,6 +3,7 @@
 // Licensed under GPLv3 - https://www.gnu.org/licenses/gpl-3.0.txt
 package com.presonus;
 
+import java.beans.Encoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -10,45 +11,22 @@ import java.util.function.BooleanSupplier;
 
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
+
 import com.bitwig.extension.controller.ControllerExtension;
-import com.bitwig.extension.controller.api.Action;
-import com.bitwig.extension.controller.api.Application;
-import com.bitwig.extension.controller.api.CursorDevice;
-import com.bitwig.extension.controller.api.ControllerHost;
-import com.bitwig.extension.controller.api.CursorBrowserFilterItem;
-import com.bitwig.extension.controller.api.CursorBrowserResultItem;
-import com.bitwig.extension.controller.api.CursorDeviceFollowMode;
-import com.bitwig.extension.controller.api.CursorRemoteControlsPage;
-import com.bitwig.extension.controller.api.CursorTrack;
-import com.bitwig.extension.controller.api.HardwareButton;
-import com.bitwig.extension.controller.api.HardwareControlType;
-import com.bitwig.extension.controller.api.HardwareLightVisualState;
-import com.bitwig.extension.controller.api.HardwareSurface;
-import com.bitwig.extension.controller.api.MidiExpressions;
-import com.bitwig.extension.controller.api.MidiIn;
-import com.bitwig.extension.controller.api.MidiOut;
-import com.bitwig.extension.controller.api.OnOffHardwareLight;
-import com.bitwig.extension.controller.api.Parameter;
-import com.bitwig.extension.controller.api.RelativeHardwareKnob;
-import com.bitwig.extension.controller.api.Transport;
-import com.bitwig.extension.controller.api.SendBank;
-import com.bitwig.extension.controller.api.Track;
-import com.bitwig.extension.controller.api.TrackBank;
-import com.bitwig.extension.controller.api.MasterTrack;
-import com.bitwig.extension.controller.api.HardwareActionBindable;
-import com.bitwig.extension.controller.api.DeviceBank;
-import com.bitwig.extension.controller.api.Device;
-import com.bitwig.extension.controller.api.PopupBrowser;
-import com.bitwig.extension.controller.api.RelativeHardwarControlBindable;
+import com.bitwig.extension.controller.api.*;
 
 //Bitwig Framework components
 import com.bitwig.extensions.framework.Layer;
 import com.bitwig.extensions.framework.Layers;
 
 //Local components
+import com.bitwig.extensions.framework.RelativeHardwareControlBinding;
 import com.presonus.handler.DisplayMode;
 import com.presonus.handler.HardwareHandler;
 import com.presonus.handler.DoNothing;
+
+//V2.0 added for encoder monitoring...maybe this works?
+import com.bitwig.extension.callback.BooleanValueChangedCallback;
 
 public class AtomSQExtension extends ControllerExtension
 {
@@ -169,7 +147,8 @@ public class AtomSQExtension extends ControllerExtension
       mTrackBank.itemCount().markInterested();
       mTrackBank.scrollPosition().markInterested();
       mTrackBank.cursorIndex().markInterested();
-  
+
+
 
       for (int i = 0; i < mTrackBank.getSizeOfBank(); i++) {
                final Track track = mTrackBank.getItemAt(i);
@@ -219,6 +198,7 @@ public class AtomSQExtension extends ControllerExtension
       createBrowserTargets();
 
 
+
       //Layers
       initLayers(); 
     
@@ -260,6 +240,26 @@ public class AtomSQExtension extends ControllerExtension
       DM.initHW();
       //DM.InstMode();
 
+      //2.0 must come after HW init, as it references HW
+      // this should be able to be moved to the create encoder bit...
+      for ( RelativeHardwareKnob mencoder :mEncoders) {
+         mencoder.hasTargetValue().markInterested();
+         mencoder.targetName().markInterested();
+         mencoder.targetValue().markInterested();
+         mencoder.targetDisplayedValue().markInterested();
+         mencoder.modulatedTargetDisplayedValue().markInterested();
+         mencoder.modulatedTargetValue().markInterested();
+         mencoder.isUpdatingTargetValue().markInterested();
+//         //v2.0 copied from official mackie code...
+//         mencoder.isUpdatingTargetValue().addValueObserver(v -> {
+//                    if (v) {
+//                       driver.doActionImmediate("TOUCH");
+//                    }
+      }
+
+
+
+
       //mLastLayer must be the layer you intend to start with. if you set it to Base, odd shit happens. So we are priming the variable here. 
       mLastLayer = mInstLayer;
       activateLayer(mInstLayer, null);
@@ -269,6 +269,11 @@ public class AtomSQExtension extends ControllerExtension
       mHost.showPopupNotification("Atom SQ Initialized");
 
    }
+
+
+
+
+
 
      ////////////////////////
     //  Hardware Surface  //
@@ -340,7 +345,7 @@ public class AtomSQExtension extends ControllerExtension
       {
          createEncoder(i);
       }
-      
+
       setPhysicalPositions();
    }
 
@@ -426,17 +431,21 @@ public class AtomSQExtension extends ControllerExtension
       if (index <= 7){
       encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hH.CC_ENCODER_1 + index, 100));
       }
-      //as the CC for encoder 9 is not sequencial, have to do it seperately. 
+      //as the CC for encoder 9 is not sequencial, have to do it seperately.
       else {
         encoder.setAdjustValueMatcher(mMidiIn.createRelativeSignedBitCCValueMatcher(0, hH.CC_ENCODER_9, 127));
         //this could be worked on...the stepped encoder does not move as smoothly in BW as the others.
        // encoder.setStepSize(4.0);
 
       }
-     
+
       mEncoders[index] = encoder;
 
+
+
    }
+
+
 
    private void save()
    {
@@ -458,11 +467,11 @@ public class AtomSQExtension extends ControllerExtension
 
    private void changePlayPosition (final Double num)
    {
-      
+
       //this has to be abstracted, cannot set the start position directly int he binding. It returns an error about void.
       final double pos = mTransport.playStartPosition().get();
       double down = (int)pos;
-      double up = (int)pos+1; 
+      double up = (int)pos+1;
       boolean match = (pos == down);
       if (match)
       {
@@ -481,12 +490,12 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-   public void moveDeviceLeft() 
+   public void moveDeviceLeft()
    {
       final Device previousDevice = mCDLDBnk.getDevice(0);
       //these two lines resolved the issue of the bouncing ends. v1.1
       // final Boolean notend = mCDLDBnk.canScrollBackwards().getAsBoolean();
-      // if (notend){ 
+      // if (notend){
          previousDevice.beforeDeviceInsertionPoint().moveDevices(mCursorDevice);
          mCursorDevice.selectNext();
          mCursorDevice.selectPrevious();
@@ -495,7 +504,7 @@ public class AtomSQExtension extends ControllerExtension
       // }
    }
 
-   public void moveDeviceRight() 
+   public void moveDeviceRight()
    {
       //V1.1 to avoid a double jump if the cursor device is all the way on the left
       final Device nextDevice;
@@ -514,7 +523,7 @@ public class AtomSQExtension extends ControllerExtension
       mCursorDevice.selectNext();
    }
 
-   public void moveTrackUp() 
+   public void moveTrackUp()
    {
       final Track previousTrack = mTrackBank.getItemAt(0);
       previousTrack.beforeTrackInsertionPoint().moveTracks(mCursorTrack);
@@ -523,7 +532,7 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
-   public void moveTrackDown() 
+   public void moveTrackDown()
    {
       final Track nextTrack = mTrackBank.getItemAt(2);
       nextTrack.afterTrackInsertionPoint().moveTracks(mCursorTrack);
@@ -531,10 +540,10 @@ public class AtomSQExtension extends ControllerExtension
       mCursorTrack.selectNext();
 
    }
- 
+
 //V1.1 preset
-//this is an abstraction of the old browser layer. This should allow for easier layer creation, as each of the diff configs has diff columns. 
-   public void createBrowserTargets() 
+//this is an abstraction of the old browser layer. This should allow for easier layer creation, as each of the diff configs has diff columns.
+   public void createBrowserTargets()
    {
       inc0 = mHost.createAction(() ->  mBrowserFavorites.selectNext(),  () -> "+");
       dec0 = mHost.createAction(() -> mBrowserFavorites.selectPrevious(),  () -> "-");
@@ -595,6 +604,7 @@ public class AtomSQExtension extends ControllerExtension
       mMultiBrowserLayer = createLayer("MultiBrowser");
       mSamplesBrowserLayer = createLayer("SamplesBrowser");
       mPresetBrowserLayer = createLayer("PresetBrowser");
+      mRCLayer = createLayer("RCDisplay");
 
       createBaseLayer();
       createInstLayer();
@@ -610,6 +620,7 @@ public class AtomSQExtension extends ControllerExtension
       createMultiBrowserLayer();
       createSamplesBrowserLayer();
       createPresetBrowserLayer();
+      createRCLayer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -793,6 +804,10 @@ public class AtomSQExtension extends ControllerExtension
       mBaseLayer.bindPressed(mLeftButton, () -> mApplication.focusPanelBelow());
       mBaseLayer.bindPressed(mRightButton, () -> mApplication.focusPanelBelow());
 
+
+      //V2.0 attempt to get encoders to trigger controldisplay layer on touch
+   //   mBaseLayer.bind(mEncoders, mControlDisplayLayer);
+
       //only done in the base layer, because base layer.
       mBaseLayer.activate();
    }
@@ -874,6 +889,7 @@ public class AtomSQExtension extends ControllerExtension
          final Parameter parameter = mRemoteControls.getParameter(i);
          final RelativeHardwareKnob encoder = mEncoders[i];
          mInstLayer.bind(encoder, parameter);
+
       }
    }
 
@@ -1025,22 +1041,25 @@ public class AtomSQExtension extends ControllerExtension
       mSamplesBrowserLayer.bind(mEncoders[7], RHCBresult);
    }
 
+   private void createRCLayer()
+   {
+   //V2.0 display update layer for controller assignments and values
+   }
 
-
-      //TODO what is this really doing? can this be cleaned up with the newer browser setup?
+   //TODO what is this really doing? can this be cleaned up with the newer browser setup?
    private void startPresetBrowsing()
-{
-   if (mCursorDevice.exists().get())
    {
-      mCursorDevice.replaceDeviceInsertionPoint().browse();
+      if (mCursorDevice.exists().get())
+      {
+         mCursorDevice.replaceDeviceInsertionPoint().browse();
+      }
+      else
+      {
+         mCursorDevice.deviceChain().endOfDeviceChainInsertionPoint().browse();
+      }
    }
-   else
-   {
-      mCursorDevice.deviceChain().endOfDeviceChainInsertionPoint().browse();
-   }
-}
 
-     ////////////////////////
+   ////////////////////////
     //  Standard Methods  //
    ////////////////////////
 
@@ -1061,35 +1080,63 @@ public class AtomSQExtension extends ControllerExtension
 
       getactiveLayers(mLayers);
       //v1.1 adding flush to refresh to Inst if track is no longer empty
-   if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){ 
-         mHost.println("FLUSH: mDevice no longer empty");
-         activateLayer(mInstLayer,null);
-         DM.InstMode();
-      }
-   if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){ 
-         mHost.println("FLUSH: mDevice is now empty");
-         activateLayer(mInstEmptyLayer,null);
-         DM.InstEmptyMode();
-      } 
+      if(mCursorDevice.exists().getAsBoolean() && mInstEmptyLayer.isActive()){
+            mHost.println("FLUSH: mDevice no longer empty");
+            activateLayer(mInstLayer,null);
+            DM.InstMode();
+         }
+      if((mInstLayer.isActive() || mInst2Layer.isActive()) && !mCursorDevice.exists().getAsBoolean()){
+            mHost.println("FLUSH: mDevice is now empty");
+            activateLayer(mInstEmptyLayer,null);
+            DM.InstEmptyMode();
+         }
 
-   //V1.1 Preset Browser: added this to activate layers in particular when switching when the browser is already open. 
-   if(mBrowserLayer.isActive())
-   {
-      //mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
-      mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
-      switch(mBrowserlayercontentindex)
+      //V1.1 Preset Browser: added this to activate layers in particular when switching when the browser is already open.
+      if(mBrowserLayer.isActive())
       {
-         case 0: activateLayer(mDeviceBrowserLayer, mBrowserLayer); break;
-         case 1: activateLayer(mPresetBrowserLayer, mBrowserLayer);break;
-         case 2: activateLayer(mMultiBrowserLayer, mBrowserLayer);break;
-         case 3:
-          case 4:
-              activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+         //mBrowserlayercontentname = mPopupBrowser.selectedContentTypeName().get();
+         mBrowserlayercontentindex = mPopupBrowser.selectedContentTypeIndex().get();
+         switch(mBrowserlayercontentindex)
+         {
+            case 0: activateLayer(mDeviceBrowserLayer, mBrowserLayer); break;
+            case 1: activateLayer(mPresetBrowserLayer, mBrowserLayer);break;
+            case 2: activateLayer(mMultiBrowserLayer, mBrowserLayer);break;
+            case 3: // placeholder
+             case 4: activateLayer(mSamplesBrowserLayer, mBrowserLayer);break;
+         }
       }
-   }
 
-   mHardwareSurface.updateHardware();
-   DM.updateDisplay();
+
+   //V2.0
+      //check if any encoder is active, update variables
+     for ( RelativeHardwareKnob mencoder :mEncoders) {
+//          if (mencoder.isUpdatingTargetValue().getAsBoolean()) {
+//             mHost.println("booya");
+//             mEncName = mencoder.targetName().toString();
+//            mEncValue = mencoder.targetValue().toString();
+      //  mHost.println(String.valueOf(mencoder.targetValue().get()));
+       // mHost.println(String.valueOf(mencoder.hasTargetValue().get()));
+       mHost.println(String.valueOf(mencoder.targetName().get()));
+       mHost.println(" -" + mencoder.targetDisplayedValue().get());
+       mHost.println("target value: " + mencoder.targetValue().get());
+  //      mHost.println(String.valueOf(mencoder.modulatedTargetValue().get()));
+  //      mHost.println(String.valueOf(mencoder.modulatedTargetDisplayedValue().get()));
+        mHost.println(" - is updating: " + mencoder.isUpdatingTargetValue().get());
+
+//             break;
+//          }
+////          else {
+////             mEncName = null;
+////             mEncValue = null;
+//          //}
+//
+      }
+
+//
+
+
+      mHardwareSurface.updateHardware();
+      DM.updateDisplay();
 
       //V1.1 troubleshooting for display mode issues
       // String mcdname = mCursorDevice.name().get();
@@ -1147,12 +1194,12 @@ public class AtomSQExtension extends ControllerExtension
 
    @Override
    public void exit()
-{
-   //Exit Live Mode
-   //noinspection OctalInteger
-   mMidiOut.sendMidi(143,00,00);
-   mHost.showPopupNotification("Atom SQ Exited");
-}
+   {
+      //Exit Live Mode
+      //noinspection OctalInteger
+      mMidiOut.sendMidi(143,00,00);
+      mHost.showPopupNotification("Atom SQ Exited");
+   }
 
      ////////////////////////
     // Host Proxy Objects //
@@ -1217,7 +1264,7 @@ public class AtomSQExtension extends ControllerExtension
          super.activeLayersChanged();
       }
    }; 
-   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer, mDeviceBrowserLayer,mMultiBrowserLayer,mSamplesBrowserLayer,mPresetBrowserLayer;
+   public Layer mBaseLayer, mInstLayer, mSongLayer, mSong2Layer, mEditLayer, mUserLayer, mInst2Layer, mShiftLayer, mInst3Layer, mBrowserLayer, mInstEmptyLayer, mDeviceBrowserLayer,mMultiBrowserLayer,mSamplesBrowserLayer,mPresetBrowserLayer, mRCLayer;
    private Layer mLastLayer;
    //final int mLayersCount = mLayers.getLayers().size();
    final List<Layer> mLayerList = mLayers.getLayers();
@@ -1233,5 +1280,12 @@ public class AtomSQExtension extends ControllerExtension
 
    private DoNothing mDoNothing;
    private BooleanSupplier mLightsOff;
+
+   public String mEncName;
+  public String mEncValue;
+
+  public Boolean mObsEnc0;
+  public BooleanValueChangedCallback mCBEnc0;
+
 
 }

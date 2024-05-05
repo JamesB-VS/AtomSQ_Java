@@ -37,6 +37,9 @@ public class DisplayMode
    private Layer dDeviceBrowserLayer;
    private PopupBrowser dPopupBrowser;
 
+   //V2.0
+   private Layer dRCLayer;
+
     public void start(AtomSQExtension Ext)
    {
        dHost = Ext.mHost;
@@ -51,6 +54,8 @@ public class DisplayMode
       dInstEmptyLayer = Ext.mInstEmptyLayer;
       dDeviceBrowserLayer = Ext.mDeviceBrowserLayer;
       dPopupBrowser = Ext.mPopupBrowser;
+      //V2.0
+       dRCLayer = Ext.mRCLayer;
 
     }
       
@@ -95,6 +100,19 @@ public class DisplayMode
          dMidiOut.sendSysex(sysex3);
       }
       //V1.1 adding DeviceBrowser option
+
+
+       //V2.0 going to add one for Remote Control name and value
+       else if (dRCLayer.isActive()){
+           //Main line 1
+           //String pTrack = dCursorTrack.name().get();
+           byte[] sysex2 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL1).addHex(sH.yellow).addByte(sH.spc).addString("RC:", 3).terminate();
+           dMidiOut.sendSysex(sysex2);
+           //Main line 2
+           byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Value:", 6).terminate();
+           dMidiOut.sendSysex(sysex3);
+       }
+
       else 
             {
          //Main line 1 
@@ -106,6 +124,9 @@ public class DisplayMode
          byte[] sysex3 = SysexBuilder.fromHex(sH.sheader).addByte(sH.MainL2).addHex(sH.white).addByte(sH.spc).addString("Device: ", 8).addString(pDev, pDev.length()).terminate();
          dMidiOut.sendSysex(sysex3);
       }
+
+      //adding momentary display modes here (encoders)
+
    }
 
    public void initHW()
@@ -195,7 +216,7 @@ public class DisplayMode
       dMidiOut.sendSysex("F0000106221301F7");
    }
  
-   public void InstMode ()
+    public void InstMode ()
    {
    dHost.showPopupNotification("Devices");
       dApplication.focusPanelBelow();
@@ -225,7 +246,7 @@ public class DisplayMode
  
 //v1.1 Adding new mode for an empty track. only new device button
    //changing private to public for the mode finder bits in the layer change above
-public void InstEmptyMode ()
+    public void InstEmptyMode ()
    {
    dHost.showPopupNotification("Devices");
       dApplication.focusPanelBelow();
@@ -326,6 +347,12 @@ public void InstEmptyMode ()
       }
       dMidiOut.sendSysex("F0 00 01 06 22 12 06 00 5B 5B 00 F7");
       dMidiOut.sendSysex("F0000106221301F7");
+    }
+
+    public void ControlDisplayMode ()
+    {
+
+
     }
 
 }
