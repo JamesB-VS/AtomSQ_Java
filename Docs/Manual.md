@@ -29,6 +29,7 @@ Currently, the A button does nothing. Working on it.
 
 ### Transport
 The usual stuff, but with some shift functions too:
+
 |Key |Function  |Shift  |  
 |-  |-  |-  |
 |Stop  |Stops playback, sets play to beginning  |-  |  
@@ -100,22 +101,24 @@ In this mode, the center of the display shows the Track: in yellow and the Devic
 
 
 #### Devices Mode
-When the Inst button is lit, this mode is active. It provides access to controls for the Devices. There are two pages of controls, indicated by the Fwd/Back buttons being lit.
+When the Inst button is lit, this mode is active. It provides access to controls for the Devices. There are three pages of controls, indicated by the Fwd/Back buttons being lit.
 
 In this mode, the center of the display shows the Track: in yellow and the Device: in white. The button text is also in white.
-
+###### Updates
 V1.1: If a track has no device in it, the display menu will change to a helpful reminder to insert a device, and all 6 display buttons will bring up the pop-up browser to the Device menu.
 
+V2.0: Added 3rd page, moved the 2 device move buttons there. Replaced on page 1 with RCPage Down and RCPage Up
+
 ##### Page 1
-|Control  |Function  |Shift  |
-|-  |-  |-  |
-|Encoders 1-8  |Device remote controls 1-8  |-  |
-|Button 1   |Toggles device enabled  |-  |
-|Button 2   |Toggles display of device window  |-  |
-|Button 3   |Toggles display of expanded/collapsed device  |-  |
-|Button 4   |Toggles display of remote controls  |-  |
-|Button 5   |Moves the device to the left  |-  |
-|Button 6   |Moves the device to the right  |-  |
+|Control  | Function |Shift  |
+|-  |------|-  |
+|Encoders 1-8  | Device remote controls 1-8 |-  |
+|Button 1   | Toggles device enabled |-  |
+|Button 2   | Toggles display of device window |-  |
+|Button 3   | Toggles display of expanded/collapsed device |-  |
+|Button 4   | Toggles display of remote controls |-  |
+|Button 5   | Selects the previous remote control page |-  |
+|Button 6   | Selects the previous remote control page |-  |
 
 ##### Page 2
 |Control  |Function  |Shift  |
@@ -128,6 +131,16 @@ V1.1: If a track has no device in it, the display menu will change to a helpful 
 |Button 5   |Opens the preset browser  |-  |
 |Button 6   |Opens the browser to insert a new device to the right   |-  |
 
+##### Page 3
+|Control  | Function                      |Shift  |
+|-  |-------------------------------|-  |
+|Encoders 1-8  | Device remote controls 1-8    |-  |
+|Button 1   | -                             |-  |
+|Button 2   | -                             |-  |
+|Button 3   | -                             |-  |
+|Button 4   | -                             |-  |
+|Button 5   | Moves the device to the left  |-  |
+|Button 6   | Moves the device to the right |-  |
 
 #### Browser
 Browser mode is activated either by the new device button, preset buttons in page 2 of the device mode, or when the browser is activated in Bitwig itself. 

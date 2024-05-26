@@ -229,7 +229,7 @@ public class DisplayMode
       dMidiOut.sendSysex("F0000106221400F7");
    
       //button titles
-      String[] mTitles= {"Enabled", "Wndw", "Expand", "RCtrls", "Move Left", "Move Right"};
+      String[] mTitles= {"Enabled", "Wndw", "Expand", "RCtrls", "RCPage Down", "RCPage Up" /*, "Move Left", "Move Right"*/};
       for (int i = 0; i < 6; i++) 
       {
          final String msg = mTitles[i];
@@ -297,7 +297,30 @@ public class DisplayMode
        dMidiOut.sendMidi(176, 29, 00);
        dMidiOut.sendSysex("F0000106221301F7");
     }
- 
+
+    public void Inst3Mode ()
+    {
+        //dHost.println("InstMode");
+        //dHost.showPopupNotification("Instrument Mode");
+        //dApplication.setPanelLayout("ARRANGE");
+
+        //configure display
+        dMidiOut.sendSysex("F0000106221300F7");
+        dMidiOut.sendSysex("F0000106221400F7");
+
+        //button titles
+        String[] mTitles= {"", "", "", "", "Move Left", "Move Right"};
+
+        for (int i = 0; i < 6; i++)
+        {
+            final String msg = mTitles[i];
+            byte[] sysex = SysexBuilder.fromHex(sH.sheader).addByte(sH.sButtonsTitle[i]).addHex(sH.white).addByte(sH.spc).addString(msg, msg.length()).terminate();
+            dMidiOut.sendSysex(sysex);
+        }
+        // Encoder 9...must recenter it? 00 and 127 have no other visible effect.
+        dMidiOut.sendMidi(176, 29, 00);
+        dMidiOut.sendSysex("F0000106221301F7");
+    }
     public void EditMode ()
     {
       //dHost.println("EditMode");

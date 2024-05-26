@@ -12,6 +12,7 @@ import java.util.function.BooleanSupplier;
 import com.bitwig.extension.api.Color;
 import com.bitwig.extension.api.util.midi.ShortMidiMessage;
 
+import com.bitwig.extension.callback.ValueChangedCallback;
 import com.bitwig.extension.controller.ControllerExtension;
 import com.bitwig.extension.controller.api.*;
 
@@ -178,8 +179,11 @@ public class AtomSQExtension extends ControllerExtension
          Parameter parameter = mRemoteControls.getParameter(i);
          parameter.name().markInterested();
       }
+      //V2.0 RCPages
+      mRemoteControls.hasNext().markInterested();
+      mRemoteControls.hasPrevious().markInterested();
 
-      //Transport
+     //Transport
       mTransport = mHost.createTransport();
       mTransport.isPlaying().markInterested();
       mTransport.isArrangerRecordEnabled ().markInterested ();
@@ -240,22 +244,6 @@ public class AtomSQExtension extends ControllerExtension
       DM.initHW();
       //DM.InstMode();
 
-      //2.0 must come after HW init, as it references HW
-      // this should be able to be moved to the create encoder bit...
-      for ( RelativeHardwareKnob mencoder :mEncoders) {
-         mencoder.hasTargetValue().markInterested();
-         mencoder.targetName().markInterested();
-         mencoder.targetValue().markInterested();
-         mencoder.targetDisplayedValue().markInterested();
-         mencoder.modulatedTargetDisplayedValue().markInterested();
-         mencoder.modulatedTargetValue().markInterested();
-         mencoder.isUpdatingTargetValue().markInterested();
-//         //v2.0 copied from official mackie code...
-//         mencoder.isUpdatingTargetValue().addValueObserver(v -> {
-//                    if (v) {
-//                       driver.doActionImmediate("TOUCH");
-//                    }
-      }
 
 
 
@@ -426,6 +414,8 @@ public class AtomSQExtension extends ControllerExtension
          .createRelativeHardwareKnob("encoder" + (index + 1));
       encoder.setLabel(String.valueOf(index + 1));
       encoder.setIndexInGroup(index);
+
+
       //here you can adjust the last number to adjust the encoder sensitivity wthin BW. Smaller numbers are jumpy, but move faster
       //the knobs ARE speed sensitive
       if (index <= 7){
@@ -440,6 +430,8 @@ public class AtomSQExtension extends ControllerExtension
       }
 
       mEncoders[index] = encoder;
+
+
 
 
 
@@ -541,6 +533,7 @@ public class AtomSQExtension extends ControllerExtension
 
    }
 
+
 //V1.1 preset
 //this is an abstraction of the old browser layer. This should allow for easier layer creation, as each of the diff configs has diff columns.
    public void createBrowserTargets()
@@ -595,6 +588,7 @@ public class AtomSQExtension extends ControllerExtension
       mSong2Layer = createLayer("Song2");
       mInstLayer = createLayer("Inst");
       mInst2Layer = createLayer ("Inst2");
+      mInst3Layer = createLayer("Inst3");
       mEditLayer = createLayer ("Edit");
       mUserLayer = createLayer("User");
       mShiftLayer = createLayer ("Shift");
@@ -621,6 +615,7 @@ public class AtomSQExtension extends ControllerExtension
       createSamplesBrowserLayer();
       createPresetBrowserLayer();
       createRCLayer();
+      createInst3Layer();
 
       // DebugUtilities.createDebugLayer(mLayers, mHardwareSurface).activate();
    }
@@ -714,10 +709,16 @@ public class AtomSQExtension extends ControllerExtension
             mApplication.undo(); 
             mHost.showPopupNotification("Undo");
          }
+         //for modes with multiple pages, add them in REVERSE order!
+         else if (mInst3Layer.isActive()) {
+            activateLayer(mInst2Layer, mInstLayer);
+            DM.Inst2Mode();
+         }
          else if (mInst2Layer.isActive()) {
             activateLayer(mInstLayer, null);
             DM.InstMode();
          }
+
          else if (mSong2Layer.isActive()){
             activateLayer(mSongLayer, null);
             DM.SongMode();
@@ -730,11 +731,19 @@ public class AtomSQExtension extends ControllerExtension
          mApplication.redo(); 
          mHost.showPopupNotification("Redo");
          }
+         //for modes with multiple pages, add them in REVERSE order!
+         else if (mInst2Layer.isActive()) {
+            activateLayer(mInst3Layer, mInstLayer);
+            DM.Inst3Mode();
+
+         }
+
          else if (mInstLayer.isActive()) {
            activateLayer(mInst2Layer, mInstLayer);
             DM.Inst2Mode();
          
          }
+
          else if (mSongLayer.isActive()){
            activateLayer(mSong2Layer, mSongLayer);
             DM.Song2Mode();
@@ -880,8 +889,11 @@ public class AtomSQExtension extends ControllerExtension
       mInstLayer.bindToggle(m3Button, mCursorDevice.isExpanded(), mCursorDevice.isExpanded());
       mInstLayer.bindToggle(m4Button, mCursorDevice.isRemoteControlsSectionVisible(), mCursorDevice.isRemoteControlsSectionVisible());
      //V1.1 adding lights to these buttons
-      mInstLayer.bindToggle(m5Button, this::moveDeviceLeft, mCursorDevice.hasPrevious() );
-      mInstLayer.bindToggle(m6Button, this::moveDeviceRight, mCursorDevice.hasNext());
+//      mInstLayer.bindToggle(m5Button, this::moveDeviceLeft, mCursorDevice.hasPrevious() );
+//      mInstLayer.bindToggle(m6Button, this::moveDeviceRight, mCursorDevice.hasNext());
+      //V2.0 switching buttons to cycle RC Pages
+      mInstLayer.bindToggle(m5Button, mRemoteControls.selectPreviousAction(), mRemoteControls.hasPrevious());
+      mInstLayer.bindToggle(m6Button, mRemoteControls.selectNextAction(), mRemoteControls.hasNext());
         
       //Encoders
       for (int i = 0; i < 8; i++)
@@ -897,7 +909,8 @@ public class AtomSQExtension extends ControllerExtension
    {
       //this turns lights on and off. 
       mInst2Layer.bind(() -> true, mBackButton);
-      mInst2Layer.bind(() -> false, mForwardButton);
+      //V2.0 RCPages set to true as there is a new page
+      mInst2Layer.bind(() -> true, mForwardButton);
       mInst2Layer.bind(() -> true, mInstButton);
 
       mInst2Layer.bind(() -> false, m1Button);
@@ -914,6 +927,29 @@ public class AtomSQExtension extends ControllerExtension
       mInst2Layer.bindPressed(m5Button, this::startPresetBrowsing);
       mInst2Layer.bindPressed(m6Button, () -> mCursorDevice.afterDeviceInsertionPoint().browse());
    }
+
+   //V2.0 RCPages need to move the Move buttons
+   private void createInst3Layer()
+   {
+      //this turns lights on and off.
+      mInst3Layer.bind(() -> true, mBackButton);
+      mInst3Layer.bind(() -> false, mForwardButton);
+      mInst3Layer.bind(() -> true, mInstButton);
+
+      mInst3Layer.bind(() -> false, m1Button);
+      mInst3Layer.bind(() -> false, m2Button);
+      mInst3Layer.bind(() -> false, m3Button);
+      mInst3Layer.bind(() -> false, m4Button);
+      mInst3Layer.bind(() -> true, m5Button);
+      mInst3Layer.bind(() -> true, m6Button);
+
+      //V1.1 adding lights to these buttons
+      mInst3Layer.bindToggle(m5Button, this::moveDeviceLeft, mCursorDevice.hasPrevious() );
+      mInst3Layer.bindToggle(m6Button, this::moveDeviceRight, mCursorDevice.hasNext());
+   }
+
+
+
 
    //V1.1 adding new layer for when Track has no devices
     private void createInstEmptyLayer()
@@ -1041,6 +1077,7 @@ public class AtomSQExtension extends ControllerExtension
       mSamplesBrowserLayer.bind(mEncoders[7], RHCBresult);
    }
 
+   //TODO: remove this and all references
    private void createRCLayer()
    {
    //V2.0 display update layer for controller assignments and values
@@ -1106,33 +1143,6 @@ public class AtomSQExtension extends ControllerExtension
          }
       }
 
-
-   //V2.0
-      //check if any encoder is active, update variables
-     for ( RelativeHardwareKnob mencoder :mEncoders) {
-//          if (mencoder.isUpdatingTargetValue().getAsBoolean()) {
-//             mHost.println("booya");
-//             mEncName = mencoder.targetName().toString();
-//            mEncValue = mencoder.targetValue().toString();
-      //  mHost.println(String.valueOf(mencoder.targetValue().get()));
-       // mHost.println(String.valueOf(mencoder.hasTargetValue().get()));
-       mHost.println(String.valueOf(mencoder.targetName().get()));
-       mHost.println(" -" + mencoder.targetDisplayedValue().get());
-       mHost.println("target value: " + mencoder.targetValue().get());
-  //      mHost.println(String.valueOf(mencoder.modulatedTargetValue().get()));
-  //      mHost.println(String.valueOf(mencoder.modulatedTargetDisplayedValue().get()));
-        mHost.println(" - is updating: " + mencoder.isUpdatingTargetValue().get());
-
-//             break;
-//          }
-////          else {
-////             mEncName = null;
-////             mEncValue = null;
-//          //}
-//
-      }
-
-//
 
 
       mHardwareSurface.updateHardware();
@@ -1287,5 +1297,6 @@ public class AtomSQExtension extends ControllerExtension
   public Boolean mObsEnc0;
   public BooleanValueChangedCallback mCBEnc0;
 
+  //private BooleanValueChangedCallback touched;
 
 }
